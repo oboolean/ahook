@@ -34,13 +34,13 @@ class TraceProcessor {
 
                 InputStream inputStream = file.getInputStream(jarEntry);
                 jarOutputStream.putNextEntry(zipEntry);
-                println('before entryName:' + entryName)
+//                println('before entryName:' + entryName)
                 if (shouldProcessClass(entryName)) {
-                    println('entryName:' + entryName)
+//                    println('entryName:' + entryName)
                     def bytes = referHackWhenInit(inputStream);
                     jarOutputStream.write(bytes);
                 } else {
-                    println('entryName:' + 'nonononono')
+//                    println('entryName:' + 'nonononono')
                     jarOutputStream.write(IOUtils.toByteArray(inputStream));
                 }
                 jarOutputStream.closeEntry();
@@ -168,6 +168,7 @@ class TraceProcessor {
         String name, desc, signature, className;
         String[] exceptions;
         int aopVar;
+        String content;
 
         public MyMethodVisitor(final int api, final MethodVisitor mv
                                , int access , String name, String desc, String signature, String[] exceptions, String className) {
@@ -183,14 +184,19 @@ class TraceProcessor {
         @Override
         void visitCode() {
             super.visitCode()
-            println('***** className: ' + className+" ******* name: "+name+" *** desc: "+desc)
-            String content = getSimpleClassName(className)+"."+name+getSimpleDesc2(desc)
-            if (content.length() > 127){
-                content = getSimpleClassName(className)+"."+name;
+            if (name.startsWith("set") || name.startsWith("get")){
+                return
             }
-            println("**** content: "+content)
-            mv.visitLdcInsn(content)//方法名+参数列表及返回值类型
-            mv.visitMethodInsn(Opcodes.INVOKESTATIC,"android/os/Trace","beginSection","(Ljava/lang/String;)V",false);
+            content = className+"."+name+desc
+//            if (content.length() > 127){
+//                content = getSimpleClassName(className)+"."+name+getSimpleDesc2(desc)
+//            }
+//            if (content.length() > 127){
+//                content = getSimpleClassName(className)+"."+name;
+//            }
+            TraceRecorder.write(className,name,desc,content)
+                mv.visitLdcInsn(content)//方法名+参数列表及返回值类型
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC,"android/oboolean/ATrace","beginSection","(Ljava/lang/String;)V",false);
         }
 
 
@@ -217,6 +223,7 @@ class TraceProcessor {
                 String tmp = result.replaceFirst(java.util.regex.Matcher.quoteReplacement(arg),java.util.regex.Matcher.quoteReplacement(simpleArg))
                 if (result.equals(tmp)){
                     return result;
+                    
                 }
                 result = tmp;
                 lIndex = result.indexOf("L")
@@ -229,7 +236,13 @@ class TraceProcessor {
         void visitInsn(int opcode) {
             if ((opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN)
                     || opcode == Opcodes.ATHROW) {
-                mv.visitMethodInsn(Opcodes.INVOKESTATIC,"android/os/Trace","endSection","()V",false);
+                if (name.startsWith("set") || name.startsWith("get")){
+                }else{
+                    mv.visitLdcInsn(content)//方法名+参数列表及返回值类型
+                    mv.visitMethodInsn(Opcodes.INVOKESTATIC,"android/oboolean/ATrace","endSection","(Ljava/lang/String;)V",false);
+//                    mv.visitMethodInsn(Opcodes.INVOKESTATIC,"android/oboolean/ATrace","endSection","()V",false);
+                }
+
             }
             super.visitInsn(opcode)
         }

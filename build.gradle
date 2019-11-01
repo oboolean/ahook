@@ -4,15 +4,21 @@
 buildscript {
 
     repositories {
+//        maven { url 'http://maven.amap.com/nexus/content/repositories/amap/'}
+        jcenter()
         maven { url 'http://repo1.maven.org/maven2'}
         google()
         maven {
-            url uri('/Users/boolean/tmp/0411')
+            url uri('/Users/boolean/localMaven')
         }
+        mavenLocal()
     }
     dependencies {
         classpath('com.android.tools.build:gradle:3.3.0')
-        classpath 'com.oboolean:trace:0.0.1-SNAPSHOT' //本地测试时先执行 ./gradlew :aop:uploadArchives 进行发布
+//        classpath 'com.novoda:bintray-release:0.8.1'
+//        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.0'
+        classpath 'com.autonavi.scm:method-trace:0.0.2-SNAPSHOT' //本地测试时先执行 ./gradlew :aop:uploadArchives 进行发布
+//        classpath 'com.autonavi.scm:method-trace:0.0.7-atrace' //本地测试时先执行 ./gradlew :aop:uploadArchives 进行发布
 //        classpath 'com.github.dcendents:android-maven-gradle-plugin:1.4.1'
 //        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.4'
         // NOTE: Do not place your application dependencies here; they belong
@@ -29,4 +35,15 @@ allprojects {
 
 task clean(type: Delete) {
     delete rootProject.buildDir
+}
+
+//依赖中有中文注释,防止乱码
+allprojects {
+    tasks.withType(Javadoc) {
+        options {
+            encoding "UTF-8"
+            charSet 'UTF-8'
+            links "http://docs.oracle.com/javase/7/docs/api"
+        }
+    }
 }

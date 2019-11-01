@@ -28,13 +28,23 @@ dependencies {
 }
 
 
-apply plugin: 'method-trace'
 
-mtrace {
-    include = [//正则表达式
-               'com/.*',
-    ]
-    exclude = [//正则表达式
-               '.*android/oboolean/ATrace*',
-    ]
+if (hasProperty("mtrace")){
+    print("***************** "+mtrace)
+    if (mtrace == "true"){
+        apply plugin: 'method-trace'
+
+        mtrace {
+            include = [//正则表达式
+                       'com/.*',
+            ]
+            exclude = [//正则表达式
+                       '.*android/oboolean/ATrace*',
+                       '.*com/oboolean/ahook/MainActivity'
+            ]
+        }
+    }
 }
+
+
+

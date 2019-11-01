@@ -1,4 +1,7 @@
 apply plugin: 'groovy'
+//apply plugin: 'com.novoda.bintray-release'
+apply plugin: 'maven-publish'
+//apply from: 'maven.gradle'
 
 
 dependencies {
@@ -14,16 +17,48 @@ repositories {
 }
 
 
+// 强制 Java/JavaDoc 等的编码为 UTF-8
+tasks.withType(JavaCompile) {
+    options.encoding = "UTF-8"
+}
+
+
+// 安装到本地 maven 仓库中 (gradle install)
+//install {
+//    repositories.mavenInstaller {
+//        pom.groupId = 'com.autonavi.amap'
+//        pom.artifactId = 'method-trace'
+//        version artifact_version
+//        pom.packaging = 'jar'
+//    }
+//}
+
+
 apply plugin: 'maven'
-uploadArchives{
+uploadArchives(){
     repositories.mavenDeployer {
         // maven savePath
 //        def deployPath = file('/Users/boolean/tmp/0411')
-        repository(url: uri('/Users/boolean/tmp/0411')) //deploy到本地仓库
+        repository(url: uri('/Users/boolean/localMaven')) //deploy到本地仓库
         pom.project{
-            groupId "com.oboolean"
-            artifactId "trace"
-            version "0.0.1-SNAPSHOT"
+            groupId "com.autonavi.scm"
+            artifactId "method-trace"
+            version "0.0.2-atrace"
         }
     }
 }
+
+
+
+
+
+//添加
+//publish {
+//    repoName="ahook"//仓库名，没有填写时默认仓库是maven
+//    userOrg = 'oboolean'//bintray.com用户名
+//    groupId = 'com.oboolean'//jcenter上的路径
+//    artifactId = 'method-trace'//项目名称
+//    publishVersion = '0.0.1'//版本号
+//    desc = 'Android method trace'//描述
+//    website = 'https://github.com/oboolean/ahook'//github上的地址
+//}

@@ -44,12 +44,15 @@ class TraceTransform extends Transform {
                    , Collection<TransformInput> referencedInputs
                    , TransformOutputProvider outputProvider
                    , boolean isIncremental) throws IOException, TransformException, InterruptedException {
-        project.logger.warn("start mtrace transform...inputs"+inputs)
-        project.logger.warn("start mtrace transform...output"+outputProvider)
+        project.logger.warn("************ mtrace transform begin ************")
+        TraceRecorder.initDir(project.buildDir)
+        TraceRecorder.writeConfiguration(project.extensions.getByName("mtrace").toString())
+        long currentTimeSeconds = System.currentTimeSeconds();
 
         if (outputProvider != null){
             outputProvider.deleteAll()
         }
+
         /**
          * 遍历输入文件
          */
@@ -60,7 +63,6 @@ class TraceTransform extends Transform {
              */
             input.jarInputs.each { JarInput jarInput ->
                 String destName = jarInput.name;
-                println("jarInput "+destName);
                 /**
                  * 重名名输出文件,因为可能同名,会覆盖
                  */
@@ -75,9 +77,6 @@ class TraceTransform extends Transform {
 
                 //先进行拷贝
                 FileUtils.copyFile(src, dest);
-
-                println("ttttttttttsrc "+src.getAbsolutePath());
-                println("tttdest "+dest.getAbsolutePath());
 
 
                 //处理jar进行字节码注入处理 对dest文件进行处理
@@ -96,8 +95,6 @@ class TraceTransform extends Transform {
                 String buildTypes = directoryInput.file.name
                 String productFlavors = directoryInput.file.parentFile.name
                 //这里进行我们的处理 TODO
-                println 'path:' + project.path
-                println("buildTypes:" + buildTypes)
                 String root = directoryInput.file.absolutePath
                 if (!root.endsWith(File.separator))
                     root += File.separator
@@ -105,17 +102,21 @@ class TraceTransform extends Transform {
                 directoryInput.file.eachFileRecurse { File file ->
                     def path = file.absolutePath.replace(root, '')
                     if(file.isFile() && TraceProcessor.shouldProcessClass(path)){
-                        project.logger.error('mtrace class:' + file.absolutePath)
                         TraceProcessor.processClass(file)
                     }
                 }
-                project.logger.info "Copying\t${directoryInput.file.absolutePath} \nto\t\t${dest.absolutePath}"
+//                project.logger.info "Copying\t${directoryInput.file.absolutePath} \nto\t\t${dest.absolutePath}"
                 /**
                  * 处理完后拷到目标文件
                  */
                 FileUtils.copyDirectory(directoryInput.file, dest);
             }
         }
+
+
+        TraceRecorder.writeTimeCost(System.currentTimeSeconds() - currentTimeSeconds)
+        TraceRecorder.close()
+        project.logger.warn("************ mtrace transform end ************")
     }
 
 }

@@ -1,0 +1,24 @@
+apply plugin: 'maven'
+
+import org.gradle.api.internal.artifacts.publish.DefaultPublishArtifact
+
+artifacts {
+    archives new DefaultPublishArtifact("droma", "jar", "jar", null,
+            new Date(), new File("build/libs/buildsrc.jar"))
+}
+
+uploadArchives {
+    repositories.mavenDeployer {
+        name = 'mavenCentralReleaseDeployer'
+        repository(url: "http://maven.amap.com/nexus/content/repositories/amap") {
+            authentication(userName: mvn_username, password: mvn_password)
+        }
+        addFilter("droma") { artifact, file ->
+            artifact.name == "method-trace"
+        }
+        pom("droma").packaging = 'jar'
+        pom("droma").groupId = "com.autonavi.amap"
+        pom("droma").artifactId = "method-trace"
+        pom("droma").version = artifact_version
+    }
+}

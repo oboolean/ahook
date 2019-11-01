@@ -1,6 +1,7 @@
 package com.oboolean.ahook;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
@@ -8,12 +9,22 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.location.GpsStatus;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.media.ThumbnailUtils;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
+import android.os.SystemClock;
 import android.util.Log;
 import android.view.TextureView;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -24,6 +35,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
@@ -98,19 +110,179 @@ public class MainActivity extends Activity {
     static String mPidStatFile;
     static Method mReadProcFile;
 
+    MessageQueueProxy messageQueueProxy = new MessageQueueProxy();
+
 
     private void setText(String msg){
         ((TextView)findViewById(R.id.info)).setText(msg);
     }
-    @TargetApi(Build.VERSION_CODES.M)
-    @Override
+
+
+
+
+    public class WorkHandler implements InvocationHandler {
+
+        //代理类中的真实对象
+        private Object obj;
+
+        public WorkHandler() {
+            // TODO Auto-generated constructor stub
+        }
+        //构造函数，给我们的真实对象赋值
+        public WorkHandler(Object obj) {
+            this.obj = obj;
+        }
+
+        @Override
+        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+            //在真实的对象执行之前我们可以添加自己的操作
+            System.out.println("before invoke。。。");
+            Object invoke = method.invoke(obj, args);
+            //在真实的对象执行之后我们可以添加自己的操作
+            System.out.println("after invoke。。。");
+            return invoke;
+        }
+
+    }
+
+
+
+
+    @SuppressLint("MissingPermission")
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
 
+        InvocationHandler handler = new WorkHandler(Runtime.getRuntime());
 
-        requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.READ_EXTERNAL_STORAGE},100);
+
+
+
+        long t = System.currentTimeMillis();
+        boolean tag = true;
+        for (int i = 0; i < 30 * 10000; i++){
+//            System.currentTimeMillis();
+            String s = i+""+"MapHomePresenter.onActivityPause()V";
+//            SystemClock.uptimeMillis();
+        }
+        Log.d("oboolean", "onCreate: "+(System.currentTimeMillis()-t));
+
+
+
+
+
+
+        Animation animation = AnimationUtils.loadAnimation(this,android.R.anim.fade_in);
+        animation.setDuration(3000);
+        animation.setRepeatCount(10000);
+        findViewById(R.id.info).setAnimation(animation);
+
+
+
+
+
+
+
+
+
+        new Thread(){
+            @Override
+            public void run() {
+                while (true){
+                    Message msg = messageQueueProxy.getCurrentMessage();
+                    if (msg == null){
+                        Log.d("oboolean", "runrunrun: null ");
+                    }else {
+                        Log.d("oboolean", "runrunrun: "+msg.hashCode()+", "+msg.getWhen());
+                    }
+
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }.start();
+
+
+//        for (int i = 0;i< 100; i++){
+//            Log.d("oboolean", "xxxxxonCreate: "+Message.obtain().hashCode());
+//        }
+//
+//        Message msg = new Message();
+//        msg.arg1 = 1;
+//        Log.d("oboolean", "onCreate: "+msg.hashCode());
+//
+//        msg.arg1 = 2;
+//        msg.obj = null;
+//        Log.d("oboolean", "onCreate: "+msg.hashCode());
+
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION},0);
+        }
+//
+        LocationManager locationManager=(LocationManager)getSystemService(Context.LOCATION_SERVICE);
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000, 0, new LocationListener() {
+            @Override
+            public void onLocationChanged(Location location) {
+
+            }
+
+            @Override
+            public void onStatusChanged(String provider, int status, Bundle extras) {
+
+            }
+
+            @Override
+            public void onProviderEnabled(String provider) {
+
+            }
+
+            @Override
+            public void onProviderDisabled(String provider) {
+
+            }
+        });
+
+        GpsStatus.NmeaListener nmeaListener = new GpsStatus.NmeaListener() {
+            @Override
+            public void onNmeaReceived(long timestamp, String nmea) {
+                Log.d("oboolean", "onNmeaReceived: "+timestamp+":::"+nmea);
+            }
+        };
+
+        locationManager.addNmeaListener(nmeaListener);
+
+
+
+
+    }
+
+
+    private void set1(){
+
+    }
+
+    private void get2(){
+
+    }
+
+    private void xxxsetbb(){
+
+    }
+
+
+    @TargetApi(Build.VERSION_CODES.M)
+    protected void onCreate2(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+
+
+//        requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.READ_EXTERNAL_STORAGE},100);
 
         String s1 = getCpuRateOfApp();
         String s2 = getCpuRate();
@@ -199,12 +371,25 @@ public class MainActivity extends Activity {
         Toast.makeText(this, "uuu "+isConnected(this), Toast.LENGTH_SHORT).show();
 
 
+        Thread t = new Thread(){
+            @Override
+            public void run() {
+                while (true){
+                    isConnected(MainActivity.this);
+                }
+            }
+        };
+        t.setName("hello-world");
+        t.start();
     }
 
 
     public static boolean isConnected(Context context) {
         Intent intent = context.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
         int plugged = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1);
+        for (int i = 0;i < Integer.MAX_VALUE; i++){
+            int a = i + i /5;
+        }
         return plugged == BatteryManager.BATTERY_PLUGGED_AC || plugged == BatteryManager.BATTERY_PLUGGED_USB || plugged == BatteryManager.BATTERY_PLUGGED_WIRELESS;
     }
 
